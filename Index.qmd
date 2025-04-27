@@ -1,0 +1,339 @@
+---
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+    toc-title: "Navigation"
+    toc-location: left
+    code-fold: true
+    embed-resources: true
+    number-sections: true
+execute:
+  warning: false
+  message: false
+---
+
+<div class="fade-in" style="text-align:center; margin-top:20px;">
+  <img src="unicef_logo.png" alt="UNICEF Logo" width="180" style="margin-bottom: 20px;">
+</div>
+
+<div class="fade-in" style="text-align: center; margin-top: 10px; margin-bottom: 40px;">
+  <h1 style="font-size: 3em; font-weight: bold; color: #1a1a1a;">UNICEF Global Story</h1>
+  <h2 style="font-size: 2em; color: #0077cc;">Breastfeeding and Child Survival</h2>
+  <p style="font-size: 1.2em; color: grey;">
+    A Comprehensive Visualization and Analysis Project
+  </p>
+
+  <p style="font-size: 1em; color: #555; margin-top: 30px;">
+    <strong>Name:</strong> Drishti Pahwa<br>
+    <strong>University:</strong> Dublin City University Name<br>
+    <strong>Program:</strong> MSSM<br>
+    <strong>Module:</strong> BAA1030 Data Analytics and Storytelling<br>
+    <strong>Submission Date:</strong> 27 April 2025
+  </p>
+</div>
+
+---
+
+# Introduction
+
+<div class="fade-in">
+Breastfeeding is a critical pillar for child survival, yet global disparities persist.  
+This project explores breastfeeding rates and under-5 mortality across countries, using advanced interactive visualizations to uncover patterns, trends, and actionable insights.
+</div>
+
+---
+
+# Executive Summary
+
+::: {.executive-card}
+Breastfeeding saves lives.  
+This project visualizes global patterns in breastfeeding rates and under-5 child mortality,  
+highlighting urgent gaps and recommending actionable strategies to improve child survival worldwide.
+:::
+
+---
+
+
+# Dataset
+
+```{python}
+import polars as pl
+import pandas as pd
+import geopandas as gpd
+import plotly.express as px
+from plotnine import *
+
+unicef_1 = pl.read_csv('unicef_indicator_1.csv', infer_schema_length=10000)
+unicef_2 = pl.read_csv('unicef_indicator_2.csv', infer_schema_length=10000)
+
+
+shape_world = gpd.read_file(
+    "https://public.opendatasoft.com/api/explore/v2.1/catalog/datasets/world-administrative-boundaries/exports/geojson"
+)
+
+```
+---
+
+# Global Breastfeeding and Mortality Map
+
+```{python}
+bf_data = (
+    unicef_2.filter(pl.col("indicator").str.to_lowercase().str.contains("breastfeeding"))
+    .filter(pl.col("country").is_not_null())
+    .group_by("country")
+    .agg(pl.col("obs_value").mean().alias("breastfeeding_rate"))
+)
+bf_df = pd.DataFrame(bf_data.to_dicts())
+
+mortality_data = (
+    unicef_1.filter(pl.col("indicator").str.to_lowercase().str.contains("mortality"))
+    .filter(pl.col("country").is_not_null())
+    .group_by("country")
+    .agg(pl.col("obs_value").mean().alias("under5_mortality_rate"))
+)
+mortality_df = pd.DataFrame(mortality_data.to_dicts())
+
+merged_df = pd.merge(bf_df, mortality_df, on="country", how="inner")
+
+
+fig = px.choropleth(
+    merged_df,
+    locations="country",
+    locationmode="country names",
+    color="breastfeeding_rate",
+    hover_data=["breastfeeding_rate", "under5_mortality_rate"],
+    color_continuous_scale=px.colors.sequential.Tealgrn,
+    title="Global Breastfeeding Rates and Under-5 Mortality"
+)
+
+fig.update_geos(projection_type="natural earth")
+fig.update_layout(
+    paper_bgcolor='#e6f2ff',
+    plot_bgcolor='#e6f2ff',
+    margin={"r":0,"t":50,"l":0,"b":0}
+)
+fig.show()
+```
+
+::: {.callout-note}
+**Insight:**  
+Breastfeeding rates and child survival outcomes are deeply linked, especially in low-income regions.
+Countries in Sub-Saharan Africa and South Asia show strong breastfeeding performance,  
+while parts of Europe and North America lag surprisingly behind.
+
+**Recommendation:**  
+Strengthen breastfeeding promotion within broader child healthcare systems globally.
+:::
+
+---
+
+# Bottom 10 Countries by Breastfeeding Rate & Mortality Rate
+
+```{python}
+
+bottom10 = bf_df.nsmallest(10, 'breastfeeding_rate')
+
+
+fig = px.bar(
+    bottom10,
+    x="country",
+    y="breastfeeding_rate",
+    color="breastfeeding_rate",
+    color_continuous_scale=px.colors.sequential.Peach,
+    text_auto='.2f',
+    title="Bottom 10 Countries by Breastfeeding Rate"
+)
+
+fig.update_traces(
+    hovertemplate='Country: %{x}<br>Breastfeeding Rate: %{y:.1f}%',
+    marker_line_width=1.5,
+    marker_line_color='darkgrey'
+)
+
+fig.update_layout(
+    paper_bgcolor='#e6f2ff',
+    plot_bgcolor='#e6f2ff',
+    hovermode="closest"
+)
+fig.show()
+```
+
+::: {.callout-note}
+**Insight:**  
+Barriers like cultural norms, misinformation, and lack of maternity support drive low breastfeeding rates. 
+Smaller nations like Rwanda, Burundi, and the Solomon Islands lead the world, outperforming larger economies.  
+These results suggest that policy focus and community-level maternal education have a larger impact
+than GDP alone.
+
+**Recommendation:**  
+Invest in education campaigns and supportive legislation for breastfeeding mothers.
+:::
+
+---
+
+# Best vs Worst Countries
+
+```{python}
+# Scatter Data
+scatter_df = pd.concat([bf_df.nlargest(10, 'breastfeeding_rate'), bf_df.nsmallest(10, 'breastfeeding_rate')])
+scatter_df = scatter_df.merge(mortality_df, on="country")
+
+fig = px.scatter(
+    scatter_df,
+    x="breastfeeding_rate",
+    y="under5_mortality_rate",
+    hover_name="country",
+    color="breastfeeding_rate",
+    trendline="ols",
+    color_continuous_scale=px.colors.sequential.Peach,
+    title="Best vs Worst Countries: Breastfeeding vs Mortality"
+)
+
+fig.update_traces(
+    marker=dict(size=12, opacity=0.8, line=dict(width=1, color='DarkSlateGrey'))
+)
+
+fig.update_layout(
+    paper_bgcolor='#e6f2ff',
+    plot_bgcolor='#e6f2ff',
+    margin={"r":0,"t":50,"l":0,"b":0}
+)
+fig.show()
+```
+
+::: {.callout-note}
+**Insight:**  
+A clear negative relationship exists: higher breastfeeding rates = lower mortality rates. 
+Generally, lower breastfeeding rates are associated with higher child mortality. 
+
+**Recommendation:**  
+Policy incentives should prioritize breastfeeding as a key child survival intervention. 
+This suggests that improving maternal education, breastfeeding support programs, 
+and healthcare access could significantly reduce preventable child deaths in 
+:::
+
+---
+
+# Time Series: Breastfeeding and Mortality Trends Over Major Years
+
+```{python}
+
+bf_time = pd.DataFrame(
+    unicef_2.filter((pl.col("indicator").str.to_lowercase().str.contains("breastfeeding"))).to_dicts()
+)
+mortality_time = pd.DataFrame(
+    unicef_1.filter((pl.col("indicator").str.to_lowercase().str.contains("mortality"))).to_dicts()
+)
+
+bf_time["time_period"] = bf_time["time_period"].astype(str)
+mortality_time["time_period"] = mortality_time["time_period"].astype(str)
+
+bf_time = bf_time[bf_time["time_period"].str.len() == 4]
+mortality_time = mortality_time[mortality_time["time_period"].str.len() == 4]
+
+bf_time["time_period"] = bf_time["time_period"].astype(int)
+mortality_time["time_period"] = mortality_time["time_period"].astype(int)
+
+major_years = [2000, 2005, 2010, 2015, 2020]
+bf_time = bf_time[bf_time["time_period"].isin(major_years)]
+mortality_time = mortality_time[mortality_time["time_period"].isin(major_years)]
+
+top5_countries = (
+    bf_time.groupby("country")
+    .agg(start_value=("obs_value", "first"), end_value=("obs_value", "last"))
+    .assign(improvement=lambda x: x["end_value"] - x["start_value"])
+    .sort_values("improvement", ascending=False)
+    .head(5)
+    .index.tolist()
+)
+
+merged_time = pd.merge(
+    bf_time[bf_time["country"].isin(top5_countries)],
+    mortality_time[mortality_time["country"].isin(top5_countries)],
+    on=["country", "time_period"],
+    suffixes=("_breastfeeding", "_mortality")
+)
+
+melted = merged_time.melt(
+    id_vars=["country", "time_period"],
+    value_vars=["obs_value_breastfeeding", "obs_value_mortality"],
+    var_name="Indicator",
+    value_name="Value"
+)
+
+melted["Indicator"] = melted["Indicator"].replace({
+    "obs_value_breastfeeding": "Breastfeeding Rate (%)",
+    "obs_value_mortality": "Under-5 Mortality (per 1,000 births)"
+})
+
+fig = px.line(
+    melted,
+    x="time_period",
+    y="Value",
+    color="country",
+    line_dash="Indicator",
+    markers=True,
+    title="Top 5 Countries: Breastfeeding and Mortality Trends",
+    color_discrete_sequence=px.colors.qualitative.Set2
+)
+
+fig.update_layout(
+    paper_bgcolor='#e6f2ff',
+    plot_bgcolor='#e6f2ff',
+    hovermode="x unified",
+    margin={"r":0,"t":50,"l":0,"b":0}
+)
+fig.show()
+```
+
+::: {.callout-note}
+**Insight:**  
+Countries making strategic breastfeeding investments see notable reductions in child mortality over time.
+
+**Recommendation:**  
+Scale these integrated policy models globally through UNICEF partnerships.
+:::
+
+---
+
+# Conclusion
+
+<div class="executive-card">
+  This project underlines the pivotal role breastfeeding plays in ensuring child survival worldwide.
+  Efforts should prioritize education, healthcare access, maternity protection, and international
+  cooperation to achieve SDG targets for child health by 2030.
+</div>
+
+
+<div class="footer">
+  <p><strong>Author:</strong> Drishti Pahwa | <strong>University:</strong> DCU </p>
+  <p><strong>Module: BAA1030 </strong> Data Analytics and Storytelling | <strong>Submission Date:</strong> 27 April 2025</p>
+</div>
+
+<button onclick="topFunction()" id="topBtn" title="Go to top">⬆️ Top</button>
+
+<script>
+let mybutton = document.getElementById("topBtn");
+
+window.onscroll = function() {scrollFunction()};
+
+function scrollFunction() {
+  if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+    mybutton.style.display = "block";
+  } else {
+    mybutton.style.display = "none";
+  }
+}
+
+function topFunction() {
+  document.body.scrollTop = 0;
+  document.documentElement.scrollTop = 0;
+}
+</script>
+
+
+
+
+---

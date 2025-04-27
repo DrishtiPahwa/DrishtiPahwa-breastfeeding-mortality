@@ -1,0 +1,116 @@
+/* Main Page Background with Local World Map and Font */
+body {
+    background: #f5fbff url('world.svg.png') no-repeat center center fixed;
+    background-size: cover;
+    background-blend-mode: lighten;
+    font-family: 'Poppins', 'Raleway', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+.executive-summary {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    text-align: center;
+    margin: 40px auto;
+    width: 90%;
+  }
+
+  .executive-card {
+    background: #ffffff;
+    padding: 20px;
+    border-left: 5px solid #0077cc;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+    border-radius: 10px;
+    margin: 30px auto;
+  }
+
+/* Heading Styles */
+h1, h2, h3, h4 {
+    font-family: 'Raleway', sans-serif;
+    font-weight: bold;
+    color: #003366;
+}
+
+/* Cards Behind Each Section */
+.section-card {
+    background-color: #ffffff;
+    padding: 25px;
+    margin: 30px 0;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Callout Boxes for Insights/Recommendations */
+.callout-note {
+    background-color: #ffffff;
+    border-left: 5px solid #0077cc;
+    padding: 15px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+}
+
+/* Smooth Fade-In Animation */
+.fade-in {
+    opacity: 0;
+    animation: fadeIn 2s ease-in forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+    }
+}
+
+/* Section Dividers */
+hr {
+    border: 0;
+    height: 3px;
+    background: linear-gradient(to right, #0077cc, #66c2ff);
+    margin-top: 40px;
+    margin-bottom: 40px;
+    border-radius: 2px;
+}
+
+/* Footer Styling */
+.footer {
+    text-align: center;
+    font-size: 0.9em;
+    color: #555;
+    margin-top: 60px;
+    margin-bottom: 30px;
+    padding: 12px;
+    background-color: #d6e9f9;
+    border-top: 2px solid #0077cc;
+}
+
+/* Scroll to Top Button */
+#topBtn {
+    display: none;
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 99;
+    font-size: 20px;
+    border: none;
+    outline: none;
+    background-color: #0077cc;
+    color: white;
+    cursor: pointer;
+    padding: 14px;
+    border-radius: 50%;
+    box-shadow: 0 6px 10px rgba(0,0,0,0.2);
+}
+
+/* Hover effect for Scroll Button */
+#topBtn:hover {
+    background-color: #005fa3;
+}
+
+/* Smooth Scroll Behavior */
+html {
+    scroll-behavior: smooth;
+}
